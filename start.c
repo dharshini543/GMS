@@ -6,6 +6,7 @@
 #include "report.h"
 #include"file_operations.h"
 #include "enum.h"
+#include "report_file.h"
 
 int start()
 {
@@ -18,7 +19,9 @@ int start()
     int isTrue = 1;
 
     openFilesForReadingWriting();
+    openFiles();
     loadInventoryFromFile(&inventory);
+    loadSalesReportFromFile(&report);
 
 
     initializeUser(&user,"Dharshini","1234");
@@ -145,7 +148,7 @@ int start()
             break;
 
         case  CART_MANAGEMENT:
-            printf("Enter\n1.Add Item to Cart\n2.Delete Item from Cart\n3.Update Cart item quantity\n4.Display Cart Summary\n\n");
+            printf("Enter\n1.Add Item to Cart\n2.Delete Item from Cart\n3.Update Cart item quantity\n4.Display Cart Summary\n");
             scanf("%d", &option);
 
             switch(option)
@@ -246,11 +249,13 @@ int start()
             {
             case Generate_SalesReport:
                 generateSalesReport(&cart, &inventory,&report);
+                saveSalesReportToFile(&report, &inventory);
                 cart.head = 0;
                 break;
 
             case Generate_InventoryReport:
                 generateInventoryReport(&inventory);
+                saveInventoryReportToFile(&inventory);
                 break;
 
             case ViewLOWStockAlerts:
@@ -264,11 +269,14 @@ int start()
 
         case SAVE_TO_FILE:
             saveInventoryToFile(&inventory);
+            saveSalesReportToFile(&report, &inventory);
+            saveInventoryReportToFile(&inventory);
 
             printf("File saved Successfully\n");
             break;
 
         case LOGOUT:
+            closeFile();
             closeFiles();
             printf("Exiting program...\n");
             isTrue = 0;

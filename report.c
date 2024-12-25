@@ -57,6 +57,7 @@ void addSalesReportItem(Cart *cart, Inventory *inventory, Report *report)
                     temp2 = temp2->next;
                 }
                 temp2->quantity = temp2->quantity + current->quantity;
+
             }
         }
         current = current->next;

@@ -21,8 +21,7 @@ void openFilesForReadingWriting()
     }
 }
 
-
-void closeFiles()
+void closeFile()
 {
     if (inventoryFile != NULL)
     {
@@ -31,21 +30,6 @@ void closeFiles()
     }
 }
 
-
-/*void loadInventoryFromFile(Inventory *inventory)
-{
-    InventoryItem tempItem;
-    while (fscanf(inventoryFile, "%d,%49[^,],%49[^,],%f,%f,%49[^,],%49[^\n]\n",
-                  &tempItem.itemID, tempItem.name, tempItem.brand,
-                  &tempItem.price, &tempItem.quantity, tempItem.department, tempItem.expiryDate) != EOF)
-    {
-        InventoryItem *newItem = (InventoryItem*)malloc(sizeof(InventoryItem));
-        *newItem = tempItem;
-        newItem->next = inventory->head;
-        inventory->head = newItem;
-        inventory->itemCount++;
-    }
-}*/
 void loadInventoryFromFile(Inventory *inventory)
 {
     InventoryItem tempItem;
