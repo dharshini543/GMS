@@ -50,7 +50,6 @@ int addItemToInventory(Inventory *inventory)
             temp->next = newitem;
         }
         inventory->itemCount++;
-        printf("%d\t%s\t\t%s\t\t%.2f\t\t%.2f\t\t%s\t\t%s\n", newitem->itemID, newitem->name, newitem->brand, newitem->price, newitem->quantity, newitem->department, newitem->expiryDate);
         printf("Item Added\n");
         addInventoryItem(inventory, *newitem);
         printf("Want to continue...press 1\n");
@@ -60,6 +59,7 @@ int addItemToInventory(Inventory *inventory)
 
     return Success;
 }
+
 
 int deleteItemFromInventory(Inventory *inventory, int itemID)
 {
@@ -92,6 +92,7 @@ int deleteItemFromInventory(Inventory *inventory, int itemID)
         prev->next = current->next;
         printf("%d\t%s\t\t%s\t\t%.2f\t\t%f\t\t%s\t\t%s\n", current->itemID, current->name, current->brand, current->price, current->quantity, current->department, current->expiryDate);
         free(current);
+        inventory->itemCount--;
         deleteInventoryItem(inventory, itemID);
         return Success;
     }
@@ -108,16 +109,18 @@ int updateItemDetails(Inventory *inventory, int itemID)
     float newQuantity;
 
     InventoryItem *temp = inventory->head;
-    if (!temp) {
+    if (!temp)
+    {
         printf("No Item in inventory. Please add.\n");
         return Failure;
     }
 
-    // Find the item by itemID
-    while (temp != NULL && temp->itemID != itemID) {
+    while (temp != NULL && temp->itemID != itemID)
+    {
         temp = temp->next;
     }
-    if (temp == NULL) {
+    if (temp == NULL)
+    {
         printf("Item not found with the given item Id.\n");
         return Failure;
     }
@@ -130,7 +133,7 @@ int updateItemDetails(Inventory *inventory, int itemID)
     case Name:
         printf("Item name: ");
         scanf(" %[^\n]", newName);
-        updateInventoryItemField(inventory, itemID, Name, newName); // Pass newName
+        updateInventoryItemField(inventory, itemID, Name, newName);
         break;
     case Brand:
         printf("Item Brand: ");
@@ -165,7 +168,7 @@ int updateItemDetails(Inventory *inventory, int itemID)
     return Success;
 }
 
-void viewInventorySummary(const Inventory *inventory)
+/*void viewInventorySummary(const Inventory *inventory)
 {
     if(inventory->head == 0)
     {
@@ -182,7 +185,22 @@ void viewInventorySummary(const Inventory *inventory)
             temp = temp->next;
         }
     }
+}*/
+
+void displayInventorySummary(const Inventory *inventory)
+{
+    printf("Inventory Summary:\n");
+    printf("ID   Name                Brand            Price     Quantity    Department  Expiry Date\n");
+    InventoryItem *temp = inventory->head;
+    while (temp != NULL)
+    {
+        printf("%-4d %-20s %-15s  %.2f    %-9.2f   %-12s %-10s\n",
+               temp->itemID, temp->name, temp->brand,
+               temp->price, temp->quantity, temp->department, temp->expiryDate);
+        temp = temp->next;
+    }
 }
+
 
 /*int sortInventorybyName(Inventory *inventory)
 {

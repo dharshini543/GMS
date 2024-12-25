@@ -19,25 +19,23 @@ int start()
     openFilesForReadingWriting();
     loadInventoryFromFile(&inventory);
 
-    User* userList = loadUsersFromFile();  // Load users from file
+    User* userList = loadUsersFromFile();  
 
-    // If no users exist, create the first admin user
     if (userList == NULL) {
         printf("No users found. Please add the first admin user.\n");
         userList = createUser(userList, 1);  // First user should be admin (1 = admin)
-        saveUsersToFile(userList);  // Save the first user to file immediately
+        saveUsersToFile(userList); 
     }
 
-    int loggedIn = 0;  // Track whether a user is logged in
+    int loggedIn = 0; 
 
-    // Prompt for login until successful login
     while (!loggedIn) {
-        // Login functionality
-        login(userList);  // Attempt to log in
+        login(userList);
 
         if (currentUser != NULL) {
-            loggedIn = 1;  // Set loggedIn flag to true after successful login
+            loggedIn = 1; 
         }
+
     }
 
     while(isTrue)
@@ -98,7 +96,7 @@ int start()
                 break;
 
             case Inventory_DisplaySummary:
-                viewInventorySummary(&inventory);
+                displayInventorySummary(&inventory);
                 break;
 
             case Inventory_SortByName:
@@ -276,6 +274,8 @@ int start()
 
         case SAVE_TO_FILE:
             saveInventoryToFile(&inventory);
+
+            printf("File saved Successfully\n");
             break;
 
         case LOGOUT:
