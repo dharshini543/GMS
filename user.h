@@ -30,4 +30,5 @@ int isAdminLoggedIn();
 User* loadUsersFromFile();
 void saveUsersToFile(User* head);
 
+void closeFile();
 #endif // USER_H

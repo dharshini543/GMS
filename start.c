@@ -288,5 +288,6 @@ int start()
             printf("Enter valid choice\n");
         }
     }
+    closeFile();
     return 0;
 }
