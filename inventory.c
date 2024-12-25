@@ -168,30 +168,22 @@ int updateItemDetails(Inventory *inventory, int itemID)
     return Success;
 }
 
-/*void viewInventorySummary(const Inventory *inventory)
-{
-    if(inventory->head == 0)
-    {
-        printf("Inventory is empty\n");
-    }
-    else
-    {
-        InventoryItem* temp = inventory->head;
-        printf("Inventory Summary:\n");
-        printf("ID\t\tName\t\t\tBrand\t\t\tPrice\t\t\tQuantity\t\tDepartment\t\tExpiry Date\n");
-        while(temp != 0)
-        {
-            printf("%d\t\t%s\t\t\t%s\t\t\t%.2f\t\t\t%.2f\t\t\t%s\t\t\t%s\n", temp->itemID, temp->name, temp->brand, temp->price, temp->quantity, temp->department, temp->expiryDate);
-            temp = temp->next;
-        }
-    }
-}*/
 
 void displayInventorySummary(const Inventory *inventory)
 {
-    printf("Inventory Summary:\n");
-    printf("ID   Name                Brand            Price     Quantity    Department  Expiry Date\n");
+
     InventoryItem *temp = inventory->head;
+    if(temp == NULL)
+    {
+        printf("Inventory is Empty\n");
+        return;
+    }
+    else
+    {
+        printf("Inventory Summary:\n");
+        printf("ID   Name                Brand            Price     Quantity    Department  Expiry Date\n");
+    }
+
     while (temp != NULL)
     {
         printf("%-4d %-20s %-15s  %.2f    %-9.2f   %-12s %-10s\n",

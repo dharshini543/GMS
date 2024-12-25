@@ -2,9 +2,8 @@
 #define FILE_OPERATIONS_H
 
 #include "inventory.h"
-#include"report.h"
 void openFilesForReadingWriting();
-void closeFiles();
+void closeFile();
 void loadInventoryFromFile(Inventory *inventory);
 void saveInventoryToFile(Inventory *inventory);
 void addInventoryItem(Inventory *inventory, InventoryItem newItem);
