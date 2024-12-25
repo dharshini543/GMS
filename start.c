@@ -10,7 +10,6 @@
 int start()
 {
     int choice = 0, option = 0;
-    User user = {0};
     Inventory inventory = {0};
     Cart cart = {0};
     Report report = {0};
@@ -20,12 +19,23 @@ int start()
     openFilesForReadingWriting();
     loadInventoryFromFile(&inventory);
 
+    User* userList = loadUsersFromFile();  
 
-    initializeUser(&user,"Dharshini","1234");
-    printf("Enter 1.Login Credentials\n");
-    while(!user.isLoggedIn)
-    {
-        displayLoginScreen(&user);
+    if (userList == NULL) {
+        printf("No users found. Please add the first admin user.\n");
+        userList = createUser(userList, 1);  // First user should be admin (1 = admin)
+        saveUsersToFile(userList); 
+    }
+
+    int loggedIn = 0; 
+
+    while (!loggedIn) {
+        login(userList);
+
+        if (currentUser != NULL) {
+            loggedIn = 1; 
+        }
+
     }
 
     while(isTrue)

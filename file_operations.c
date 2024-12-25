@@ -72,7 +72,6 @@ void loadInventoryFromFile(Inventory *inventory)
         }
         inventory->itemCount++;
     }
-    printf("File loaded successfully\n");
 }
 
 void saveInventoryToFile(Inventory *inventory)

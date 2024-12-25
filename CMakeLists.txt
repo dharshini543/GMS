@@ -20,9 +20,6 @@ add_executable(GMS main.c
     start.c
     user.h
     user.c
-
-
-
 )
 
 include(GNUInstallDirs)
