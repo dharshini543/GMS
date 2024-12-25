@@ -22,7 +22,7 @@ typedef struct Inventory
 int addItemToInventory(Inventory *inventory);
 int deleteItemFromInventory(Inventory *inventory, int itemID);
 int updateItemDetails(Inventory *inventory, int itemID);
-void viewInventorySummary(const Inventory *inventory);
+void displayInventorySummary(const Inventory *inventory);
 int sortInventorybyName(Inventory *inventory);
 int sortInventorybyDepartment(Inventory *inventory);
 int sortInventorybyPrice(Inventory *inventory);

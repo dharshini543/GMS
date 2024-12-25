@@ -20,6 +20,7 @@ int start()
     openFilesForReadingWriting();
     loadInventoryFromFile(&inventory);
 
+
     initializeUser(&user,"Dharshini","1234");
     printf("Enter 1.Login Credentials\n");
     while(!user.isLoggedIn)
@@ -85,7 +86,7 @@ int start()
                 break;
 
             case Inventory_DisplaySummary:
-                viewInventorySummary(&inventory);
+                displayInventorySummary(&inventory);
                 break;
 
             case Inventory_SortByName:
@@ -263,6 +264,8 @@ int start()
 
         case SAVE_TO_FILE:
             saveInventoryToFile(&inventory);
+
+            printf("File saved Successfully\n");
             break;
 
         case LOGOUT:
