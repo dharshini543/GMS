@@ -5,15 +5,15 @@
 #include "inventory.h"
 #include "enum.h"
 
-FILE *inventoryFile = NULL;
+FILE *file = NULL;
 
 void openFilesForReadingWriting()
 {
-    inventoryFile = fopen("GroceryInventory.txt", "r+");
-    if (inventoryFile == NULL)
+    file = fopen("GroceryInventory.txt", "r+");
+    if (file == NULL)
     {
-        inventoryFile = fopen("GroceryInventory.txt", "w+");
-        if (inventoryFile == NULL)
+        file = fopen("GroceryInventory.txt", "w+");
+        if (file == NULL)
         {
             printf("Error opening inventory file.\n");
             exit(1);
@@ -21,139 +21,145 @@ void openFilesForReadingWriting()
     }
 }
 
-void closeFile()
+// Close the file
+void closeInventoryFile()
 {
-    if (inventoryFile != NULL)
+    if (file != NULL)
     {
-        fflush(inventoryFile);
-        fclose(inventoryFile);
+        fclose(file);
+        file = NULL;
     }
 }
 
 void loadInventoryFromFile(Inventory *inventory)
 {
-    InventoryItem tempItem;
-    while (fscanf(inventoryFile, "%d, %49[^,], %49[^,], %f,  %f, %49[^,], %49[^\n]\n",
-                  &tempItem.itemID, tempItem.name, tempItem.brand,
-                  &tempItem.price, &tempItem.quantity, tempItem.department, tempItem.expiryDate) != EOF)
-    {
-        InventoryItem *newItem = (InventoryItem*)malloc(sizeof(InventoryItem));
-        *newItem = tempItem;
-        newItem->next = NULL;
+    char buffer[MAX_LINE_SIZE];
+    long offset = 0;
+    InventoryItem *current = inventory->head;
 
-        if (inventory->head == NULL)
-        {
-            inventory->head = newItem;
-        }
-        else
-        {
-            InventoryItem *temp = inventory->head;
-            while (temp->next != NULL)
-            {
-                temp = temp->next;
-            }
-            temp->next = newItem;
-        }
-        inventory->itemCount++;
+    rewind(file);  // Ensure we're at the start of the file
+
+    while (fgets(buffer, MAX_LINE_SIZE, file) != NULL && current != NULL)
+    {
+        current->offset = offset;
+        offset += MAX_LINE_SIZE;
+        current = current->next;
     }
 }
 
 void saveInventoryToFile(Inventory *inventory)
 {
+    InventoryItem *current = inventory->head;
 
-    fseek(inventoryFile, 0, SEEK_SET);
+    while (current != NULL)
+    {
+        fseek(file, current->offset, SEEK_SET);
+        fprintf(file, "%d|%s|%s|%.2f|%.2f|%s|%s\n",
+                current->itemID,
+                current->name,
+                current->brand,
+                current->price,
+                current->quantity,
+                current->department,
+                current->expiryDate);
 
+        current = current->next;
+    }
+
+    fflush(file);  // Ensure all changes are saved
+}
+
+void addInventoryItem(InventoryItem *item)
+{
+    fseek(file, 0, SEEK_END);  // Move to the end of the file
+    item->offset = ftell(file);
+
+    fprintf(file, "%d|%s|%s|%.2f|%.2f|%s|%s\n",
+            item->itemID,
+            item->name,
+            item->brand,
+            item->price,
+            item->quantity,
+            item->department,
+            item->expiryDate);
+
+    fflush(file);  // Ensure the new data is written
+}
+
+void deleteInventoryItem(Inventory *inventory, InventoryItem *item)
+{
+    InventoryItem *previous = NULL;
+
+    // Find the previous item in the linked list
     InventoryItem *temp = inventory->head;
     while (temp != NULL)
     {
-        fprintf(inventoryFile, "%d,%s,%s,%.2f,%.2f,%s,%s\n", temp->itemID, temp->name, temp->brand,
-                temp->price, temp->quantity, temp->department, temp->expiryDate);
+        if (temp->next == item)
+        {
+            previous = temp;
+            break;
+        }
         temp = temp->next;
     }
 
-    fflush(inventoryFile);
-}
-
-void addInventoryItem(Inventory *inventory, InventoryItem newItem)
-{
-
-    fseek(inventoryFile, 0, SEEK_END);
-    fprintf(inventoryFile, "%d,%s,%s,%.2f,%.2f,%s,%s\n", newItem.itemID, newItem.name, newItem.brand,
-                            newItem.price, newItem.quantity, newItem.department, newItem.expiryDate);
-
-
-    fflush(inventoryFile);
-}
-
-
-void deleteInventoryItem(Inventory *inventory, int itemID)
-{
-    fseek(inventoryFile, 0, SEEK_SET);
-    freopen("GroceryInventory.txt", "w", inventoryFile);
-
-    InventoryItem *temp = inventory->head;
-    while (temp != NULL)
+    // If there's a previous item, remove the newline from its line
+    if (previous != NULL)
     {
-        fprintf(inventoryFile, "%d,%s,%s,%.2f,%.2f,%s,%s\n", temp->itemID, temp->name, temp->brand,
-                temp->price, temp->quantity, temp->department, temp->expiryDate);
-        temp = temp->next;
-    }
-    fflush(inventoryFile);
-    printf("Item with ID %d has been deleted and file updated.\n", itemID);
-}
-
-
-void updateInventoryItemField(Inventory *inventory, int itemID, int field, void *newValue)
-{
-    InventoryItem *temp = inventory->head;
-
-    while (temp != NULL && temp->itemID != itemID)
-    {
-        temp = temp->next;
-    }
-    if (temp == NULL)
-    {
-        printf("Item not found.\n");
-        return;
+        fseek(file, previous->offset + MAX_LINE_SIZE - 1, SEEK_SET);
+        fputc('\n', file);
     }
 
+    // Update offsets for all subsequent items
+    InventoryItem *remaining = item->next;
+    while (remaining != NULL)
+    {
+        remaining->offset -= MAX_LINE_SIZE;
+        remaining = remaining->next;
+    }
+}
+
+void updateInventoryItemField(InventoryItem *item, int field, void *newValue)
+{
+    char buffer[MAX_LINE_SIZE];
+    fseek(file, item->offset, SEEK_SET);
+    fgets(buffer, MAX_LINE_SIZE, file);
+
+    // Parse fields into temporary variables
+    int itemID;
+    char name[MAX_NAME_CHARS], brand[MAX_BRAND_CHARS];
+    float price, quantity;
+    char department[MAX_DEPARTMENT_CHARS], expiryDate[MAX_EXPIRY_DATE_CHARS];
+
+    sscanf(buffer, "%d|%[^|]|%[^|]|%f|%f|%[^|]|%s",
+           &itemID, name, brand, &price, &quantity, department, expiryDate);
+
+    // Update the specified field
     switch (field)
     {
     case Name:
-        strncpy(temp->name, (char *)newValue, sizeof(temp->name));
+        strncpy(name, (char *)newValue, MAX_NAME_CHARS);
         break;
     case Brand:
-        strncpy(temp->brand, (char *)newValue, sizeof(temp->brand));
+        strncpy(brand, (char *)newValue, MAX_BRAND_CHARS);
         break;
     case Price:
-        temp->price = *(float *)newValue;
+        price = *(float *)newValue;
         break;
     case Quantity:
-        temp->quantity = *(float *)newValue;
+        quantity = *(float *)newValue;
         break;
     case Department:
-        strncpy(temp->department, (char *)newValue, sizeof(temp->department));
+        strncpy(department, (char *)newValue, MAX_DEPARTMENT_CHARS);
         break;
     case ExpiryDate:
-        strncpy(temp->expiryDate, (char *)newValue, sizeof(temp->expiryDate));
+        strncpy(expiryDate, (char *)newValue, MAX_EXPIRY_DATE_CHARS);
         break;
-    default:
-        printf("Invalid field.\n");
-        return;
     }
 
-    fseek(inventoryFile, 0, SEEK_SET);
-    freopen("GroceryInventory.txt", "w", inventoryFile);
+    // Write the updated line back to the file
+    fseek(file, item->offset, SEEK_SET);
+    fprintf(file, "%d|%s|%s|%.2f|%.2f|%s|%s\n",
+            itemID, name, brand, price, quantity, department, expiryDate);
 
-    InventoryItem *tempWrite = inventory->head;
-    while (tempWrite != NULL)
-    {
-        fprintf(inventoryFile, "%d,%s,%s,%.2f,%.2f,%s,%s\n", tempWrite->itemID, tempWrite->name, tempWrite->brand,
-                tempWrite->price, tempWrite->quantity, tempWrite->department, tempWrite->expiryDate);
-        tempWrite = tempWrite->next;
-    }
-    fflush(inventoryFile);
-    printf("Field updated and file synchronized.\n");
+    fflush(file);  // Ensure the updated data is written
 }
-
-

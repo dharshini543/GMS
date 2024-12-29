@@ -7,6 +7,7 @@
 #include"file_operations.h"
 #include "enum.h"
 #include "report_file.h"
+#include "report_file.c"
 
 int start()
 {
@@ -286,9 +287,7 @@ int start()
             break;
 
         case LOGOUT:
-            closeFile();
-            closeFiles();
-            printf("Exiting program...\n");
+            printf("Logging out...\n");
             isTrue = 0;
             break;
 
@@ -296,6 +295,8 @@ int start()
             printf("Enter valid choice\n");
         }
     }
+    closeInventoryFile();
+    closeFiles();
     closeFile();
     return 0;
 }

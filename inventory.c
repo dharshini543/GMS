@@ -51,7 +51,7 @@ int addItemToInventory(Inventory *inventory)
         }
         inventory->itemCount++;
         printf("Item Added\n");
-        addInventoryItem(inventory, *newitem);
+        addInventoryItem(newitem);
         printf("Want to continue...press 1\n");
         scanf("%d",&choice);
 
@@ -76,9 +76,9 @@ int deleteItemFromInventory(Inventory *inventory, int itemID)
     {
         InventoryItem *temp = inventory->head->next;
         printf("%d\t%s\t\t%s\t\t%.2f\t\t%f\t\t%s\t\t%s\n", inventory->head->itemID, inventory->head->name, inventory->head->brand, inventory->head->price, inventory->head->quantity, inventory->head->department, inventory->head->expiryDate);
+        deleteInventoryItem(inventory, inventory->head);
         free(inventory->head);
         inventory->head = temp;
-        deleteInventoryItem(inventory, itemID);
 
         return Success;
     }
@@ -89,11 +89,11 @@ int deleteItemFromInventory(Inventory *inventory, int itemID)
             prev = current;
             current = current->next;
         }
+        deleteInventoryItem(inventory, current);
         prev->next = current->next;
         printf("%d\t%s\t\t%s\t\t%.2f\t\t%f\t\t%s\t\t%s\n", current->itemID, current->name, current->brand, current->price, current->quantity, current->department, current->expiryDate);
         free(current);
         inventory->itemCount--;
-        deleteInventoryItem(inventory, itemID);
         return Success;
     }
 }
@@ -133,32 +133,32 @@ int updateItemDetails(Inventory *inventory, int itemID)
     case Name:
         printf("Item name: ");
         scanf(" %[^\n]", newName);
-        updateInventoryItemField(inventory, itemID, Name, newName);
+        updateInventoryItemField(temp, Name, newName);
         break;
     case Brand:
         printf("Item Brand: ");
         scanf(" %[^\n]", newBrand);
-        updateInventoryItemField(inventory, itemID, Brand, newBrand); // Pass newBrand
+        updateInventoryItemField(temp, Brand, newBrand); // Pass newBrand
         break;
     case Price:
         printf("Item Price: ");
         scanf("%f", &newPrice);
-        updateInventoryItemField(inventory, itemID, Price, &newPrice); // Pass address of newPrice
+        updateInventoryItemField(temp, Price, &newPrice); // Pass address of newPrice
         break;
     case Quantity:
         printf("Item Quantity: ");
         scanf("%f", &newQuantity);
-        updateInventoryItemField(inventory, itemID, Quantity, &newQuantity); // Pass address of newQuantity
+        updateInventoryItemField(temp, Quantity, &newQuantity); // Pass address of newQuantity
         break;
     case Department:
         printf("Item Department: ");
         scanf(" %[^\n]", newDepartment);
-        updateInventoryItemField(inventory, itemID, Department, newDepartment); // Pass newDepartment
+        updateInventoryItemField(temp, Department, newDepartment); // Pass newDepartment
         break;
     case ExpiryDate:
         printf("Item Expiry Date: ");
         scanf(" %[^\n]", newExpiryDate);
-        updateInventoryItemField(inventory, itemID, ExpiryDate, newExpiryDate); // Pass newExpiryDate
+        updateInventoryItemField(temp, ExpiryDate, newExpiryDate); // Pass newExpiryDate
         break;
     default:
         printf("Enter a valid option\n");
