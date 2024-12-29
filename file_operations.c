@@ -31,6 +31,12 @@ void closeInventoryFile()
     }
 }
 
+// Utility function to write padded fields
+void writePaddedField(char *dest, const char *src, int maxLen)
+{
+    snprintf(dest, maxLen + 1, "%-*s", maxLen, src);
+}
+
 void loadInventoryFromFile(Inventory *inventory)
 {
     char buffer[MAX_LINE_SIZE];
@@ -54,14 +60,23 @@ void saveInventoryToFile(Inventory *inventory)
     while (current != NULL)
     {
         fseek(file, current->offset, SEEK_SET);
-        fprintf(file, "%d|%s|%s|%.2f|%.2f|%s|%s\n",
-                current->itemID,
-                current->name,
-                current->brand,
-                current->price,
-                current->quantity,
-                current->department,
-                current->expiryDate);
+
+        char paddedName[MAX_NAME_CHARS + 1], paddedBrand[MAX_BRAND_CHARS + 1];
+        char paddedDepartment[MAX_DEPARTMENT_CHARS + 1], paddedExpiry[MAX_EXPIRY_DATE_CHARS + 1];
+
+        writePaddedField(paddedName, current->name, MAX_NAME_CHARS);
+        writePaddedField(paddedBrand, current->brand, MAX_BRAND_CHARS);
+        writePaddedField(paddedDepartment, current->department, MAX_DEPARTMENT_CHARS);
+        writePaddedField(paddedExpiry, current->expiryDate, MAX_EXPIRY_DATE_CHARS);
+
+        fprintf(file, "%-*d|%s|%s|%*.2f|%*.2f|%s|%s\n",
+                MAX_ITEM_ID_DIGITS, current->itemID,
+                paddedName,
+                paddedBrand,
+                MAX_PRICE_DIGITS, current->price,
+                MAX_QUANTITY_DIGITS, current->quantity,
+                paddedDepartment,
+                paddedExpiry);
 
         current = current->next;
     }
@@ -74,92 +89,107 @@ void addInventoryItem(InventoryItem *item)
     fseek(file, 0, SEEK_END);  // Move to the end of the file
     item->offset = ftell(file);
 
-    fprintf(file, "%d|%s|%s|%.2f|%.2f|%s|%s\n",
-            item->itemID,
-            item->name,
-            item->brand,
-            item->price,
-            item->quantity,
-            item->department,
-            item->expiryDate);
+    char paddedName[MAX_NAME_CHARS + 1], paddedBrand[MAX_BRAND_CHARS + 1];
+    char paddedDepartment[MAX_DEPARTMENT_CHARS + 1], paddedExpiry[MAX_EXPIRY_DATE_CHARS + 1];
+
+    writePaddedField(paddedName, item->name, MAX_NAME_CHARS);
+    writePaddedField(paddedBrand, item->brand, MAX_BRAND_CHARS);
+    writePaddedField(paddedDepartment, item->department, MAX_DEPARTMENT_CHARS);
+    writePaddedField(paddedExpiry, item->expiryDate, MAX_EXPIRY_DATE_CHARS);
+
+    fprintf(file, "%-*d|%s|%s|%*.2f|%*.2f|%s|%s\n",
+            MAX_ITEM_ID_DIGITS, item->itemID,
+            paddedName,
+            paddedBrand,
+            MAX_PRICE_DIGITS, item->price,
+            MAX_QUANTITY_DIGITS, item->quantity,
+            paddedDepartment,
+            paddedExpiry);
 
     fflush(file);  // Ensure the new data is written
 }
 
-void deleteInventoryItem(Inventory *inventory, InventoryItem *item)
-{
-    InventoryItem *previous = NULL;
+void deleteInventoryItem(Inventory *inventory, InventoryItem *item) {
+    // Step 1: Update the offsets of the subsequent items in memory
+    InventoryItem *current = item->next;
+    while (current != NULL) {
+        // Shift the offset back by one line size (one item is removed, so the subsequent items' offsets decrease)
+        current->offset -= MAX_LINE_SIZE;
+        current = current->next;
+    }
 
-    // Find the previous item in the linked list
-    InventoryItem *temp = inventory->head;
-    while (temp != NULL)
-    {
-        if (temp->next == item)
-        {
-            previous = temp;
-            break;
+    // Step 2: Re-write the entire inventory to the file, skipping the deleted item
+    fseek(file, 0, SEEK_SET);  // Start from the beginning of the file
+
+    current = inventory->head;
+    while (current != NULL) {
+        // If it's not the item to be deleted, write it to the file
+        if (current != item) {
+            fprintf(file, "%-*d|%-*s|%-*s|%-*0.2f|%-*0.2f|%-*s|%-*s\n",
+                    MAX_ITEM_ID_DIGITS, current->itemID,
+                    MAX_NAME_CHARS, current->name,
+                    MAX_BRAND_CHARS, current->brand,
+                    MAX_PRICE_DIGITS, current->price,
+                    MAX_QUANTITY_DIGITS, current->quantity,
+                    MAX_DEPARTMENT_CHARS, current->department,
+                    MAX_EXPIRY_DATE_CHARS, current->expiryDate);
         }
-        temp = temp->next;
+        // Move to the next item in the list
+        current = current->next;
     }
-
-    // If there's a previous item, remove the newline from its line
-    if (previous != NULL)
-    {
-        fseek(file, previous->offset + MAX_LINE_SIZE - 1, SEEK_SET);
-        fputc('\n', file);
-    }
-
-    // Update offsets for all subsequent items
-    InventoryItem *remaining = item->next;
-    while (remaining != NULL)
-    {
-        remaining->offset -= MAX_LINE_SIZE;
-        remaining = remaining->next;
-    }
+    fflush(file);  // Ensure the new data is written
 }
+
+
+
+
+
 
 void updateInventoryItemField(InventoryItem *item, int field, void *newValue)
 {
-    char buffer[MAX_LINE_SIZE];
-    fseek(file, item->offset, SEEK_SET);
-    fgets(buffer, MAX_LINE_SIZE, file);
-
-    // Parse fields into temporary variables
-    int itemID;
-    char name[MAX_NAME_CHARS], brand[MAX_BRAND_CHARS];
-    float price, quantity;
-    char department[MAX_DEPARTMENT_CHARS], expiryDate[MAX_EXPIRY_DATE_CHARS];
-
-    sscanf(buffer, "%d|%[^|]|%[^|]|%f|%f|%[^|]|%s",
-           &itemID, name, brand, &price, &quantity, department, expiryDate);
-
-    // Update the specified field
+    // Update the specific field in the InventoryItem object
     switch (field)
     {
     case Name:
-        strncpy(name, (char *)newValue, MAX_NAME_CHARS);
+        strncpy(item->name, (char *)newValue, MAX_NAME_CHARS);
+        item->name[MAX_NAME_CHARS - 1] = '\0';  // Ensure null termination
         break;
     case Brand:
-        strncpy(brand, (char *)newValue, MAX_BRAND_CHARS);
+        strncpy(item->brand, (char *)newValue, MAX_BRAND_CHARS);
+        item->brand[MAX_BRAND_CHARS - 1] = '\0';  // Ensure null termination
         break;
     case Price:
-        price = *(float *)newValue;
+        item->price = *(float *)newValue;
         break;
     case Quantity:
-        quantity = *(float *)newValue;
+        item->quantity = *(float *)newValue;
         break;
     case Department:
-        strncpy(department, (char *)newValue, MAX_DEPARTMENT_CHARS);
+        strncpy(item->department, (char *)newValue, MAX_DEPARTMENT_CHARS);
+        item->department[MAX_DEPARTMENT_CHARS - 1] = '\0';  // Ensure null termination
         break;
     case ExpiryDate:
-        strncpy(expiryDate, (char *)newValue, MAX_EXPIRY_DATE_CHARS);
+        strncpy(item->expiryDate, (char *)newValue, MAX_EXPIRY_DATE_CHARS);
+        item->expiryDate[MAX_EXPIRY_DATE_CHARS - 1] = '\0';  // Ensure null termination
         break;
     }
 
-    // Write the updated line back to the file
-    fseek(file, item->offset, SEEK_SET);
-    fprintf(file, "%d|%s|%s|%.2f|%.2f|%s|%s\n",
-            itemID, name, brand, price, quantity, department, expiryDate);
+    // Prepare the full line to be written back to the file
+    char updatedLine[MAX_LINE_SIZE];
 
-    fflush(file);  // Ensure the updated data is written
+    // Format the updated line with the modified fields
+    snprintf(updatedLine, MAX_LINE_SIZE, "%-*d|%-*s|%-*s|%*.2f|%*.2f|%-*s|%-*s\n",
+             MAX_ITEM_ID_DIGITS, item->itemID,
+             MAX_NAME_CHARS, item->name,
+             MAX_BRAND_CHARS, item->brand,
+             MAX_PRICE_DIGITS, item->price,
+             MAX_QUANTITY_DIGITS, item->quantity,
+             MAX_DEPARTMENT_CHARS, item->department,
+             MAX_EXPIRY_DATE_CHARS, item->expiryDate);
+
+    // Write the updated line to the file at the specified offset
+    fseek(file, item->offset, SEEK_SET);
+    fwrite(updatedLine, sizeof(char), strlen(updatedLine), file);
+
+    fflush(file);  // Ensure that the updated data is written to the file
 }
