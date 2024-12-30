@@ -53,6 +53,8 @@ void loadInventoryFromFile(Inventory *inventory)
     }
 }
 
+
+
 void saveInventoryToFile(Inventory *inventory)
 {
     InventoryItem *current = inventory->head;
@@ -83,6 +85,9 @@ void saveInventoryToFile(Inventory *inventory)
 
     fflush(file);  // Ensure all changes are saved
 }
+
+
+
 
 void addInventoryItem(InventoryItem *item)
 {
@@ -139,10 +144,6 @@ void deleteInventoryItem(Inventory *inventory, InventoryItem *item) {
     }
     fflush(file);  // Ensure the new data is written
 }
-
-
-
-
 
 
 void updateInventoryItemField(InventoryItem *item, int field, void *newValue)
