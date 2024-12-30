@@ -19,13 +19,13 @@ int start()
     int isTrue = 1;
 
     openFilesForReadingWriting();
-    openFiles();
+   // openFiles();
     loadInventoryFromFile(&inventory);
-    loadSalesReportFromFile(&report);
+    //loadSalesReportFromFile(&report);
 
-    User* userList = loadUsersFromFile();  
+    //User* userList = loadUsersFromFile();
 
-    if (userList == NULL) {
+    /*if (userList == NULL) {
         printf("No users found. Please add the first admin user.\n");
         userList = createUser(userList, 1);  // First user should be admin (1 = admin)
         saveUsersToFile(userList); 
@@ -40,7 +40,7 @@ int start()
             loggedIn = 1; 
         }
 
-    }
+    }*/
 
     while(isTrue)
     {
@@ -296,7 +296,6 @@ int start()
         }
     }
     closeInventoryFile();
-    closeFiles();
-    closeFile();
+    //closeFile();
     return 0;
 }
