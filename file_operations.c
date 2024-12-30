@@ -5,15 +5,15 @@
 #include "inventory.h"
 #include "enum.h"
 
-FILE *inventoryFile = NULL;
+FILE *file = NULL;
 
 void openFilesForReadingWriting()
 {
-    inventoryFile = fopen("GroceryInventory.txt", "r+");
-    if (inventoryFile == NULL)
+    file = fopen("GroceryInventory.txt", "r+");
+    if (file == NULL)
     {
-        inventoryFile = fopen("GroceryInventory.txt", "w+");
-        if (inventoryFile == NULL)
+        file = fopen("GroceryInventory.txt", "w+");
+        if (file == NULL)
         {
             printf("Error opening inventory file.\n");
             exit(1);
@@ -21,139 +21,176 @@ void openFilesForReadingWriting()
     }
 }
 
-void closeFile()
+// Close the file
+void closeInventoryFile()
 {
-    if (inventoryFile != NULL)
+    if (file != NULL)
     {
-        fflush(inventoryFile);
-        fclose(inventoryFile);
+        fclose(file);
+        file = NULL;
     }
+}
+
+// Utility function to write padded fields
+void writePaddedField(char *dest, const char *src, int maxLen)
+{
+    snprintf(dest, maxLen + 1, "%-*s", maxLen, src);
 }
 
 void loadInventoryFromFile(Inventory *inventory)
 {
-    InventoryItem tempItem;
-    while (fscanf(inventoryFile, "%d, %49[^,], %49[^,], %f,  %f, %49[^,], %49[^\n]\n",
-                  &tempItem.itemID, tempItem.name, tempItem.brand,
-                  &tempItem.price, &tempItem.quantity, tempItem.department, tempItem.expiryDate) != EOF)
-    {
-        InventoryItem *newItem = (InventoryItem*)malloc(sizeof(InventoryItem));
-        *newItem = tempItem;
-        newItem->next = NULL;
+    char buffer[MAX_LINE_SIZE];
+    long offset = 0;
+    InventoryItem *current = inventory->head;
 
-        if (inventory->head == NULL)
-        {
-            inventory->head = newItem;
-        }
-        else
-        {
-            InventoryItem *temp = inventory->head;
-            while (temp->next != NULL)
-            {
-                temp = temp->next;
-            }
-            temp->next = newItem;
-        }
-        inventory->itemCount++;
+    rewind(file);  // Ensure we're at the start of the file
+
+    while (fgets(buffer, MAX_LINE_SIZE, file) != NULL && current != NULL)
+    {
+        current->offset = offset;
+        offset += MAX_LINE_SIZE;
+        current = current->next;
     }
 }
+
+
 
 void saveInventoryToFile(Inventory *inventory)
 {
+    InventoryItem *current = inventory->head;
 
-    fseek(inventoryFile, 0, SEEK_SET);
-
-    InventoryItem *temp = inventory->head;
-    while (temp != NULL)
+    while (current != NULL)
     {
-        fprintf(inventoryFile, "%d,%s,%s,%.2f,%.2f,%s,%s\n", temp->itemID, temp->name, temp->brand,
-                temp->price, temp->quantity, temp->department, temp->expiryDate);
-        temp = temp->next;
+        fseek(file, current->offset, SEEK_SET);
+
+        char paddedName[MAX_NAME_CHARS + 1], paddedBrand[MAX_BRAND_CHARS + 1];
+        char paddedDepartment[MAX_DEPARTMENT_CHARS + 1], paddedExpiry[MAX_EXPIRY_DATE_CHARS + 1];
+
+        writePaddedField(paddedName, current->name, MAX_NAME_CHARS);
+        writePaddedField(paddedBrand, current->brand, MAX_BRAND_CHARS);
+        writePaddedField(paddedDepartment, current->department, MAX_DEPARTMENT_CHARS);
+        writePaddedField(paddedExpiry, current->expiryDate, MAX_EXPIRY_DATE_CHARS);
+
+        fprintf(file, "%-*d|%s|%s|%*.2f|%*.2f|%s|%s\n",
+                MAX_ITEM_ID_DIGITS, current->itemID,
+                paddedName,
+                paddedBrand,
+                MAX_PRICE_DIGITS, current->price,
+                MAX_QUANTITY_DIGITS, current->quantity,
+                paddedDepartment,
+                paddedExpiry);
+
+        current = current->next;
     }
 
-    fflush(inventoryFile);
-}
-
-void addInventoryItem(Inventory *inventory, InventoryItem newItem)
-{
-
-    fseek(inventoryFile, 0, SEEK_END);
-    fprintf(inventoryFile, "%d,%s,%s,%.2f,%.2f,%s,%s\n", newItem.itemID, newItem.name, newItem.brand,
-                            newItem.price, newItem.quantity, newItem.department, newItem.expiryDate);
-
-
-    fflush(inventoryFile);
-}
-
-
-void deleteInventoryItem(Inventory *inventory, int itemID)
-{
-    fseek(inventoryFile, 0, SEEK_SET);
-    freopen("GroceryInventory.txt", "w", inventoryFile);
-
-    InventoryItem *temp = inventory->head;
-    while (temp != NULL)
-    {
-        fprintf(inventoryFile, "%d,%s,%s,%.2f,%.2f,%s,%s\n", temp->itemID, temp->name, temp->brand,
-                temp->price, temp->quantity, temp->department, temp->expiryDate);
-        temp = temp->next;
-    }
-    fflush(inventoryFile);
-    printf("Item with ID %d has been deleted and file updated.\n", itemID);
+    fflush(file);  // Ensure all changes are saved
 }
 
 
-void updateInventoryItemField(Inventory *inventory, int itemID, int field, void *newValue)
+
+
+void addInventoryItem(InventoryItem *item)
 {
-    InventoryItem *temp = inventory->head;
+    fseek(file, 0, SEEK_END);  // Move to the end of the file
+    item->offset = ftell(file);
 
-    while (temp != NULL && temp->itemID != itemID)
-    {
-        temp = temp->next;
-    }
-    if (temp == NULL)
-    {
-        printf("Item not found.\n");
-        return;
+    char paddedName[MAX_NAME_CHARS + 1], paddedBrand[MAX_BRAND_CHARS + 1];
+    char paddedDepartment[MAX_DEPARTMENT_CHARS + 1], paddedExpiry[MAX_EXPIRY_DATE_CHARS + 1];
+
+    writePaddedField(paddedName, item->name, MAX_NAME_CHARS);
+    writePaddedField(paddedBrand, item->brand, MAX_BRAND_CHARS);
+    writePaddedField(paddedDepartment, item->department, MAX_DEPARTMENT_CHARS);
+    writePaddedField(paddedExpiry, item->expiryDate, MAX_EXPIRY_DATE_CHARS);
+
+    fprintf(file, "%-*d|%s|%s|%*.2f|%*.2f|%s|%s\n",
+            MAX_ITEM_ID_DIGITS, item->itemID,
+            paddedName,
+            paddedBrand,
+            MAX_PRICE_DIGITS, item->price,
+            MAX_QUANTITY_DIGITS, item->quantity,
+            paddedDepartment,
+            paddedExpiry);
+
+    fflush(file);  // Ensure the new data is written
+}
+
+void deleteInventoryItem(Inventory *inventory, InventoryItem *item) {
+    // Step 1: Update the offsets of the subsequent items in memory
+    InventoryItem *current = item->next;
+    while (current != NULL) {
+        // Shift the offset back by one line size (one item is removed, so the subsequent items' offsets decrease)
+        current->offset -= MAX_LINE_SIZE;
+        current = current->next;
     }
 
+    // Step 2: Re-write the entire inventory to the file, skipping the deleted item
+    fseek(file, 0, SEEK_SET);  // Start from the beginning of the file
+
+    current = inventory->head;
+    while (current != NULL) {
+        // If it's not the item to be deleted, write it to the file
+        if (current != item) {
+            fprintf(file, "%-*d|%-*s|%-*s|%-*0.2f|%-*0.2f|%-*s|%-*s\n",
+                    MAX_ITEM_ID_DIGITS, current->itemID,
+                    MAX_NAME_CHARS, current->name,
+                    MAX_BRAND_CHARS, current->brand,
+                    MAX_PRICE_DIGITS, current->price,
+                    MAX_QUANTITY_DIGITS, current->quantity,
+                    MAX_DEPARTMENT_CHARS, current->department,
+                    MAX_EXPIRY_DATE_CHARS, current->expiryDate);
+        }
+        // Move to the next item in the list
+        current = current->next;
+    }
+    fflush(file);  // Ensure the new data is written
+}
+
+
+void updateInventoryItemField(InventoryItem *item, int field, void *newValue)
+{
+    // Update the specific field in the InventoryItem object
     switch (field)
     {
     case Name:
-        strncpy(temp->name, (char *)newValue, sizeof(temp->name));
+        strncpy(item->name, (char *)newValue, MAX_NAME_CHARS);
+        item->name[MAX_NAME_CHARS - 1] = '\0';  // Ensure null termination
         break;
     case Brand:
-        strncpy(temp->brand, (char *)newValue, sizeof(temp->brand));
+        strncpy(item->brand, (char *)newValue, MAX_BRAND_CHARS);
+        item->brand[MAX_BRAND_CHARS - 1] = '\0';  // Ensure null termination
         break;
     case Price:
-        temp->price = *(float *)newValue;
+        item->price = *(float *)newValue;
         break;
     case Quantity:
-        temp->quantity = *(float *)newValue;
+        item->quantity = *(float *)newValue;
         break;
     case Department:
-        strncpy(temp->department, (char *)newValue, sizeof(temp->department));
+        strncpy(item->department, (char *)newValue, MAX_DEPARTMENT_CHARS);
+        item->department[MAX_DEPARTMENT_CHARS - 1] = '\0';  // Ensure null termination
         break;
     case ExpiryDate:
-        strncpy(temp->expiryDate, (char *)newValue, sizeof(temp->expiryDate));
+        strncpy(item->expiryDate, (char *)newValue, MAX_EXPIRY_DATE_CHARS);
+        item->expiryDate[MAX_EXPIRY_DATE_CHARS - 1] = '\0';  // Ensure null termination
         break;
-    default:
-        printf("Invalid field.\n");
-        return;
     }
 
-    fseek(inventoryFile, 0, SEEK_SET);
-    freopen("GroceryInventory.txt", "w", inventoryFile);
+    // Prepare the full line to be written back to the file
+    char updatedLine[MAX_LINE_SIZE];
 
-    InventoryItem *tempWrite = inventory->head;
-    while (tempWrite != NULL)
-    {
-        fprintf(inventoryFile, "%d,%s,%s,%.2f,%.2f,%s,%s\n", tempWrite->itemID, tempWrite->name, tempWrite->brand,
-                tempWrite->price, tempWrite->quantity, tempWrite->department, tempWrite->expiryDate);
-        tempWrite = tempWrite->next;
-    }
-    fflush(inventoryFile);
-    printf("Field updated and file synchronized.\n");
+    // Format the updated line with the modified fields
+    snprintf(updatedLine, MAX_LINE_SIZE, "%-*d|%-*s|%-*s|%*.2f|%*.2f|%-*s|%-*s\n",
+             MAX_ITEM_ID_DIGITS, item->itemID,
+             MAX_NAME_CHARS, item->name,
+             MAX_BRAND_CHARS, item->brand,
+             MAX_PRICE_DIGITS, item->price,
+             MAX_QUANTITY_DIGITS, item->quantity,
+             MAX_DEPARTMENT_CHARS, item->department,
+             MAX_EXPIRY_DATE_CHARS, item->expiryDate);
+
+    // Write the updated line to the file at the specified offset
+    fseek(file, item->offset, SEEK_SET);
+    fwrite(updatedLine, sizeof(char), strlen(updatedLine), file);
+
+    fflush(file);  // Ensure that the updated data is written to the file
 }
-
-

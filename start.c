@@ -7,6 +7,7 @@
 #include"file_operations.h"
 #include "enum.h"
 #include "report_file.h"
+#include "report_file.c"
 
 int start()
 {
@@ -18,13 +19,13 @@ int start()
     int isTrue = 1;
 
     openFilesForReadingWriting();
-    openFiles();
+   // openFiles();
     loadInventoryFromFile(&inventory);
-    loadSalesReportFromFile(&report);
+    //loadSalesReportFromFile(&report);
 
-    User* userList = loadUsersFromFile();  
+    //User* userList = loadUsersFromFile();
 
-    if (userList == NULL) {
+    /*if (userList == NULL) {
         printf("No users found. Please add the first admin user.\n");
         userList = createUser(userList, 1);  // First user should be admin (1 = admin)
         saveUsersToFile(userList); 
@@ -39,7 +40,7 @@ int start()
             loggedIn = 1; 
         }
 
-    }
+    }*/
 
     while(isTrue)
     {
@@ -286,9 +287,7 @@ int start()
             break;
 
         case LOGOUT:
-            closeFile();
-            closeFiles();
-            printf("Exiting program...\n");
+            printf("Logging out...\n");
             isTrue = 0;
             break;
 
@@ -296,6 +295,7 @@ int start()
             printf("Enter valid choice\n");
         }
     }
-    closeFile();
+    closeInventoryFile();
+    //closeFile();
     return 0;
 }

@@ -173,9 +173,9 @@ void freeList(User* head) {
 }
 
 // Function to close the file when exiting the program
-void closeFile() {
+/*void closeFile() {
     if (userFile != NULL) {
         fclose(userFile);
         userFile = NULL;  // Reset the file pointer
     }
-}
+}*/
